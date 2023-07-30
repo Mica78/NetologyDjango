@@ -7,7 +7,7 @@
 <body>
     <h3>Содержимое рабочей директории</h3>
     {% for file in files %}
-        <ul>{{ file }}</ul>
+        <li>{{ file }}</li>
     {% endfor %}
     <a href="{% url 'home' %}"><button>На главную страницу</button></a>
 </body>
