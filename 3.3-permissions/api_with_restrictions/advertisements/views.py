@@ -64,9 +64,8 @@ class AdvertisementViewSet(ModelViewSet):
     #     return Response(serializer.data)
 
     def get_queryset(self):
-        user = self.request.user.id
         queryset = Advertisement.objects.filter(
-                    Q(creator_id=user) | ~Q(status="DRAFT")
+                    Q(creator_id=self.request.user.id) | ~Q(status="DRAFT")
                 )
         return queryset
 
@@ -80,7 +79,7 @@ class FavoritesViewSet(ModelViewSet):
 
     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated])
     def get_favorites(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(Favorites.objects.filter(
+        queryset = self.filter_queryset(Favorites.objects.fi3lter(
             Q(user_id=request.user.id) |
             ~Q(advertisement__creator=request.user.id) & ~Q(advertisement__status='DRAFT')
         ))
