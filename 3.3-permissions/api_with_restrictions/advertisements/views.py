@@ -33,35 +33,42 @@ class AdvertisementViewSet(ModelViewSet):
             'user': request.user.id,
             'advertisement': advertisement.pk
         }
-        if advertisement.creator_id != request.user.id:
+        if advertisement.creator_id != request.user.id and advertisement.status != 'DRAFT':
             serializer = FavoritesSetSerializer(data=favorite_object)
             if serializer.is_valid():
                 serializer.save()
                 return Response({'status': 'favorite set'})
-        elif advertisement.creator_id != request.user.id:
-            Response({'status': "It's your advertisement"})
+        elif advertisement.creator_id == request.user.id:
+            return Response({'status': "It's your advertisement"})
         return Response({'status': "Access denied"})
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(
-            Advertisement.objects.filter(
-                Q(creator_id=request.user.id) | ~Q(status="DRAFT")
-            )
-        )
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    # def list(self, request, *args, **kwargs):
+    #     queryset = self.filter_queryset(
+    #         Advertisement.objects.filter(
+    #             Q(creator_id=request.user.id) | ~Q(status="DRAFT")
+    #         )
+    #     )
+    #     page = self.paginate_queryset(queryset)
+    #     if page is not None:
+    #         serializer = self.get_serializer(page, many=True)
+    #         return self.get_paginated_response(serializer.data)
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
+    #
+    # def retrieve(self, request, *args, **kwargs):
+    #     instance = get_object_or_404(self.queryset, **kwargs)
+    #     if instance.creator_id != request.user.id:
+    #         if instance.status == "DRAFT":
+    #             return Response({'status': 'Advertisement in DRAFT'})
+    #     serializer = self.get_serializer(instance)
+    #     return Response(serializer.data)
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = get_object_or_404(self.queryset, **kwargs)
-        if instance.creator_id != request.user.id:
-            if instance.status == "DRAFT":
-                return Response({'status': 'Advertisement in DRAFT'})
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+    def get_queryset(self):
+        user = self.request.user.id
+        queryset = Advertisement.objects.filter(
+                    Q(creator_id=user) | ~Q(status="DRAFT")
+                )
+        return queryset
 
 
 class FavoritesViewSet(ModelViewSet):
@@ -73,6 +80,9 @@ class FavoritesViewSet(ModelViewSet):
 
     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated])
     def get_favorites(self, request, *args, **kwargs):
-        queryset = Favorites.objects.filter(user_id=request.user.id)
+        queryset = self.filter_queryset(Favorites.objects.filter(
+            Q(user_id=request.user.id) |
+            ~Q(advertisement__creator=request.user.id) & ~Q(advertisement__status='DRAFT')
+        ))
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
