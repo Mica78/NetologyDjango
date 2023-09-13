@@ -15,7 +15,6 @@ class AdvertisementViewSet(ModelViewSet):
     queryset = Advertisement.objects.all()
     serializer_class = AdvertisementSerializer
     filter_backends = [DjangoFilterBackend, ]
-    filterset_fields = ['creator']
     filterset_class = AdvertisementFilter
 
     def get_permissions(self):
@@ -42,46 +41,38 @@ class AdvertisementViewSet(ModelViewSet):
             return Response({'status': "It's your advertisement"})
         return Response({'status': "Access denied"})
 
-    # def list(self, request, *args, **kwargs):
-    #     queryset = self.filter_queryset(
-    #         Advertisement.objects.filter(
-    #             Q(creator_id=request.user.id) | ~Q(status="DRAFT")
-    #         )
-    #     )
-    #     page = self.paginate_queryset(queryset)
-    #     if page is not None:
-    #         serializer = self.get_serializer(page, many=True)
-    #         return self.get_paginated_response(serializer.data)
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return Response(serializer.data)
-    #
-    # def retrieve(self, request, *args, **kwargs):
-    #     instance = get_object_or_404(self.queryset, **kwargs)
-    #     if instance.creator_id != request.user.id:
-    #         if instance.status == "DRAFT":
-    #             return Response({'status': 'Advertisement in DRAFT'})
-    #     serializer = self.get_serializer(instance)
-    #     return Response(serializer.data)
-
     def get_queryset(self):
         queryset = Advertisement.objects.filter(
-                    Q(creator_id=self.request.user.id) | ~Q(status="DRAFT")
-                )
+            Q(creator_id=self.request.user.id) | ~Q(status="DRAFT")
+        )
         return queryset
 
-
-class FavoritesViewSet(ModelViewSet):
-    queryset = Favorites.objects.all()
-    serializer_class = FavoritesSerializer
-    filter_backends = [DjangoFilterBackend, ]
-    filterset_fields = ['user']
-    permission_classes = [IsAuthenticated]
-
-    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated])
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated], url_path='favorites')
     def get_favorites(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(Favorites.objects.fi3lter(
-            Q(user_id=request.user.id) |
-            ~Q(advertisement__creator=request.user.id) & ~Q(advertisement__status='DRAFT')
-        ))
-        serializer = self.get_serializer(queryset, many=True)
+        queryset = self.filter_queryset(
+            Advertisement.objects.filter(
+                ~Q(creator_id=request.user.id) &
+                Q(favorites__user_id=request.user.id) &
+                ~Q(status='DRAFT')
+            ).select_related().all()
+        )
+        ids = [a.id for a in queryset]
+        queryset = Favorites.objects.filter(advertisement__in=ids)
+        serializer = FavoritesSerializer(queryset, many=True)
         return Response(serializer.data)
+
+# class FavoritesViewSet(ModelViewSet):
+#     queryset = Favorites.objects.all()
+#     serializer_class = FavoritesSerializer
+#     filter_backends = [DjangoFilterBackend, ]
+#     filterset_fields = ['user']
+#     permission_classes = [IsAuthenticated]
+#
+#     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated])
+#     def get_favorites(self, request, *args, **kwargs):
+#         queryset = self.filter_queryset(Favorites.objects.filter(
+#             Q(user_id=request.user.id) |
+#             ~Q(advertisement__creator=request.user.id) & ~Q(advertisement__status='DRAFT')
+#         ))
+#         serializer = self.get_serializer(queryset, many=True)
+#         return Response(serializer.data)

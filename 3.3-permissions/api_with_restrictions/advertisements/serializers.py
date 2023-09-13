@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from rest_framework import serializers
 
-from advertisements.models import Advertisement, Favorites
+from advertisements.models import *
 
 
 class UserSerializer(serializers.ModelSerializer):

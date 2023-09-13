@@ -35,10 +35,10 @@ class Favorites(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='users'
+        related_name='favorites'
     )
     advertisement = models.ForeignKey(
         Advertisement,
         on_delete=models.CASCADE,
-        related_name='advertisements'
+        related_name='favorites'
     )
