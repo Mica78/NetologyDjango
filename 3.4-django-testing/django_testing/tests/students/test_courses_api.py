@@ -10,9 +10,9 @@ def test_example():
 @pytest.mark.django_db
 def test_retrieve_course(course_bakery, client):
     course = course_bakery()
-    response = client.get(reverse('courses-list'))
+    response = client.get(reverse('courses-detail', args=[course.id]))
     assert response.status_code == 200
-    assert response.json()[0]['id'] == course.id
+    assert response.json()['id'] == course.id
 
 
 @pytest.mark.django_db
@@ -101,7 +101,6 @@ def test_update_course(
     }
     response = client.patch(url, data=data)
     assert response.status_code == expected
-
 
 
 @pytest.mark.django_db
